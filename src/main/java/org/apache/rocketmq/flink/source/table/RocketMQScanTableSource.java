@@ -28,7 +28,7 @@ import org.apache.rocketmq.flink.source.reader.deserializer.RocketMQRowDeseriali
 import org.apache.rocketmq.flink.source.reader.deserializer.RowDeserializationSchema.MetadataConverter;
 
 import org.apache.flink.table.api.DataTypes;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.connector.source.ScanTableSource;
@@ -54,7 +54,7 @@ import static org.apache.flink.api.connector.source.Boundedness.CONTINUOUS_UNBOU
 public class RocketMQScanTableSource implements ScanTableSource, SupportsReadingMetadata {
 
     private final DescriptorProperties properties;
-    private final TableSchema schema;
+    private final ResolvedSchema schema;
 
     private final String topic;
     private final String consumerGroup;
@@ -72,7 +72,7 @@ public class RocketMQScanTableSource implements ScanTableSource, SupportsReading
 
     public RocketMQScanTableSource(
             DescriptorProperties properties,
-            TableSchema schema,
+            ResolvedSchema schema,
             String topic,
             String consumerGroup,
             String nameServerAddress,

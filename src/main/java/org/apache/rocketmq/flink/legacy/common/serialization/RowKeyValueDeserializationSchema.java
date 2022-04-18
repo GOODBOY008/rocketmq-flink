@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.rocketmq.flink.legacy.common.serialization;
 
 import org.apache.rocketmq.flink.source.reader.deserializer.DirtyDataStrategy;
@@ -24,7 +25,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.descriptors.DescriptorProperties;
@@ -52,7 +53,7 @@ public class RowKeyValueDeserializationSchema implements KeyValueDeserialization
     private static final Logger LOGGER =
             LoggerFactory.getLogger(RowKeyValueDeserializationSchema.class);
 
-    private transient TableSchema tableSchema;
+    private transient ResolvedSchema tableSchema;
     private final DirtyDataStrategy formatErrorStrategy;
     private final DirtyDataStrategy fieldMissingStrategy;
     private final DirtyDataStrategy fieldIncrementStrategy;
@@ -69,7 +70,7 @@ public class RowKeyValueDeserializationSchema implements KeyValueDeserialization
     private static final int DEFAULT_LOG_INTERVAL_MS = 60 * 1000;
 
     public RowKeyValueDeserializationSchema(
-            TableSchema tableSchema,
+            ResolvedSchema tableSchema,
             DirtyDataStrategy formatErrorStrategy,
             DirtyDataStrategy fieldMissingStrategy,
             DirtyDataStrategy fieldIncrementStrategy,
@@ -84,21 +85,25 @@ public class RowKeyValueDeserializationSchema implements KeyValueDeserialization
         this.columnErrorDebug = columnErrorDebug;
         this.encoding = encoding;
         this.fieldDelimiter = StringEscapeUtils.unescapeJava(fieldDelimiter);
-        this.columnSize = tableSchema.getFieldNames().length;
+        this.columnSize = tableSchema.getColumnNames().size();
         this.fieldTypes = new ByteSerializer.ValueType[columnSize];
         this.columnIndexMapping = new HashMap<>();
         for (int index = 0; index < columnSize; index++) {
-            this.columnIndexMapping.put(tableSchema.getFieldNames()[index], index);
+            this.columnIndexMapping.put(tableSchema.getColumnNames().get(index), index);
         }
         for (int index = 0; index < columnSize; index++) {
             ByteSerializer.ValueType type =
-                    ByteSerializer.getTypeIndex(tableSchema.getFieldTypes()[index].getTypeClass());
+                    ByteSerializer.getTypeIndex(
+                            tableSchema.getColumnDataTypes().get(index).getClass());
             this.fieldTypes[index] = type;
         }
 
         DescriptorProperties descriptorProperties = new DescriptorProperties();
         descriptorProperties.putProperties(properties);
-        this.fieldDataTypes = tableSchema.getFieldDataTypes();
+        this.fieldDataTypes =
+                tableSchema
+                        .getColumnDataTypes()
+                        .toArray(new DataType[tableSchema.getColumnCount()]);
         this.lastLogExceptionTime = System.currentTimeMillis();
         this.lastLogHandleFieldTime = System.currentTimeMillis();
     }
@@ -125,7 +130,7 @@ public class RowKeyValueDeserializationSchema implements KeyValueDeserialization
 
     private boolean isOnlyHaveVarbinaryDataField() {
         if (columnSize == 1) {
-            return isByteArrayType(tableSchema.getFieldNames()[0]);
+            return isByteArrayType(tableSchema.getColumnNames().get(0));
         }
         return false;
     }
@@ -186,7 +191,7 @@ public class RowKeyValueDeserializationSchema implements KeyValueDeserialization
 
     private boolean isByteArrayType(String fieldName) {
         TypeInformation<?> typeInformation =
-                tableSchema.getFieldTypes()[columnIndexMapping.get(fieldName)];
+                tableSchema.getColumnDataTypes().get(columnIndexMapping.get(fieldName));
         if (typeInformation != null) {
             ByteSerializer.ValueType valueType =
                     ByteSerializer.getTypeIndex(typeInformation.getTypeClass());
@@ -286,7 +291,7 @@ public class RowKeyValueDeserializationSchema implements KeyValueDeserialization
     /** Builder of {@link RowKeyValueDeserializationSchema}. */
     public static class Builder {
 
-        private TableSchema schema;
+        private ResolvedSchema schema;
         private DirtyDataStrategy formatErrorStrategy = DirtyDataStrategy.SKIP;
         private DirtyDataStrategy fieldMissingStrategy = DirtyDataStrategy.SKIP;
         private DirtyDataStrategy fieldIncrementStrategy = DirtyDataStrategy.CUT;
@@ -297,7 +302,7 @@ public class RowKeyValueDeserializationSchema implements KeyValueDeserialization
 
         public Builder() {}
 
-        public Builder setTableSchema(TableSchema tableSchema) {
+        public Builder setTableSchema(ResolvedSchema tableSchema) {
             this.schema = tableSchema;
             return this;
         }

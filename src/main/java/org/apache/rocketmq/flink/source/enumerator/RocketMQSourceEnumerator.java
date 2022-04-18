@@ -18,6 +18,7 @@
 
 package org.apache.rocketmq.flink.source.enumerator;
 
+import org.apache.rocketmq.client.consumer.DefaultLitePullConsumer;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageQueue;
@@ -87,7 +88,7 @@ public class RocketMQSourceEnumerator
     private final Map<Integer, Set<RocketMQPartitionSplit>> pendingPartitionSplitAssignment;
 
     // Lazily instantiated or mutable fields.
-    private DefaultMQPullConsumer consumer;
+    private DefaultLitePullConsumer consumer;
     private boolean noMoreNewPartitionSplits = false;
 
     public RocketMQSourceEnumerator(
@@ -204,7 +205,7 @@ public class RocketMQSourceEnumerator
         Set<Tuple3<String, String, Integer>> newPartitions = new HashSet<>();
         Set<Tuple3<String, String, Integer>> removedPartitions =
                 new HashSet<>(Collections.unmodifiableSet(discoveredPartitions));
-        Set<MessageQueue> messageQueues = consumer.fetchSubscribeMessageQueues(topic);
+        Set<MessageQueue> messageQueues = consumer.fetchMessageQueues(topic).to;
         for (MessageQueue messageQueue : messageQueues) {
             Tuple3<String, String, Integer> topicPartition =
                     new Tuple3<>(
@@ -303,7 +304,7 @@ public class RocketMQSourceEnumerator
 
     private void initialRocketMQConsumer() {
         try {
-            consumer = new DefaultMQPullConsumer(consumerGroup);
+            consumer = new DefaultLitePullConsumer(consumerGroup);
             consumer.setNamesrvAddr(nameServerAddress);
             consumer.setInstanceName(
                     String.join(

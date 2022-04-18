@@ -20,7 +20,7 @@ package org.apache.rocketmq.flink.source.table;
 
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.descriptors.DescriptorProperties;
 import org.apache.flink.table.factories.DynamicTableFactory;
@@ -154,7 +154,7 @@ public class RocketMQDynamicTableSourceFactory implements DynamicTableSourceFact
         boolean useNewApi = configuration.getBoolean(OPTIONAL_USE_NEW_API);
         DescriptorProperties descriptorProperties = new DescriptorProperties();
         descriptorProperties.putProperties(rawProperties);
-        TableSchema physicalSchema =
+        ResolvedSchema physicalSchema =
                 TableSchemaUtils.getPhysicalSchema(context.getCatalogTable().getSchema());
         descriptorProperties.putTableSchema("schema", physicalSchema);
         return new RocketMQScanTableSource(

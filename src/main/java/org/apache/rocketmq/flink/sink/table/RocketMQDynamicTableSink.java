@@ -23,7 +23,7 @@ import org.apache.rocketmq.flink.legacy.RocketMQSink;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.table.api.DataTypes;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.connector.sink.SinkFunctionProvider;
@@ -47,7 +47,7 @@ import static org.apache.rocketmq.flink.sink.table.RocketMQRowDataConverter.Meta
 public class RocketMQDynamicTableSink implements DynamicTableSink, SupportsWritingMetadata {
 
     private final DescriptorProperties properties;
-    private final TableSchema schema;
+    private final ResolvedSchema schema;
 
     private final String topic;
     private final String producerGroup;
@@ -70,7 +70,7 @@ public class RocketMQDynamicTableSink implements DynamicTableSink, SupportsWriti
 
     public RocketMQDynamicTableSink(
             DescriptorProperties properties,
-            TableSchema schema,
+            ResolvedSchema schema,
             String topic,
             String producerGroup,
             String nameServerAddress,
@@ -173,7 +173,7 @@ public class RocketMQDynamicTableSink implements DynamicTableSink, SupportsWriti
                                     if (pos < 0) {
                                         return -1;
                                     }
-                                    return schema.getFieldCount() + pos;
+                                    return schema.getColumnCount() + pos;
                                 })
                         .toArray();
         return new RocketMQRowDataConverter(
@@ -186,8 +186,8 @@ public class RocketMQDynamicTableSink implements DynamicTableSink, SupportsWriti
                 isDynamicTagIncluded,
                 writeKeysToBody,
                 keyColumns,
-                convertToRowTypeInfo(schema.toRowDataType(), schema.getFieldNames()),
-                schema.getFieldDataTypes(),
+                convertToRowTypeInfo(schema.toSinkRowDataType(), schema.getColumnNames()),
+                (DataType[]) schema.getColumnDataTypes().toArray(),
                 metadataKeys.size() > 0,
                 metadataPositions);
     }
@@ -200,12 +200,12 @@ public class RocketMQDynamicTableSink implements DynamicTableSink, SupportsWriti
     }
 
     protected static RowTypeInfo convertToRowTypeInfo(
-            DataType fieldsDataType, String[] fieldNames) {
+            DataType fieldsDataType, List<String> fieldNames) {
         final TypeInformation<?>[] fieldTypes =
                 fieldsDataType.getChildren().stream()
                         .map(LegacyTypeInfoDataTypeConverter::toLegacyTypeInfo)
                         .toArray(TypeInformation[]::new);
-        return new RowTypeInfo(fieldTypes, fieldNames);
+        return new RowTypeInfo(fieldTypes, fieldNames.toArray(new String[fieldNames.size()]));
     }
 
     // --------------------------------------------------------------------------------------------

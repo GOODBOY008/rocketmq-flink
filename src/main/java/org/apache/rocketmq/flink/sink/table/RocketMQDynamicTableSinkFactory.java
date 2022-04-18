@@ -20,14 +20,13 @@ package org.apache.rocketmq.flink.sink.table;
 
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.descriptors.DescriptorProperties;
 import org.apache.flink.table.factories.DynamicTableFactory;
 import org.apache.flink.table.factories.DynamicTableSinkFactory;
 import org.apache.flink.table.factories.Factory;
 import org.apache.flink.table.factories.FactoryUtil;
-import org.apache.flink.table.utils.TableSchemaUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -113,8 +112,7 @@ public class RocketMQDynamicTableSinkFactory implements DynamicTableSinkFactory 
         }
         DescriptorProperties descriptorProperties = new DescriptorProperties();
         descriptorProperties.putProperties(rawProperties);
-        TableSchema physicalSchema =
-                TableSchemaUtils.getPhysicalSchema(context.getCatalogTable().getSchema());
+        ResolvedSchema physicalSchema = context.getCatalogTable().getResolvedSchema();
         return new RocketMQDynamicTableSink(
                 descriptorProperties,
                 physicalSchema,
