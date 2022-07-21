@@ -27,10 +27,10 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.descriptors.DescriptorProperties;
+import org.apache.flink.table.catalog.CatalogPropertiesUtil;
 import org.apache.flink.table.descriptors.SchemaValidator;
 import org.apache.flink.table.runtime.typeutils.InternalTypeInfo;
 import org.apache.flink.table.types.DataType;
@@ -59,7 +59,7 @@ public class RowDeserializationSchema
     private static final long serialVersionUID = -1L;
     private static final Logger LOGGER = LoggerFactory.getLogger(RowDeserializationSchema.class);
 
-    private transient TableSchema tableSchema;
+    private transient  ResolvedSchema  resolvedSchema;
     private final DirtyDataStrategy formatErrorStrategy;
     private final DirtyDataStrategy fieldMissingStrategy;
     private final DirtyDataStrategy fieldIncrementStrategy;
@@ -82,7 +82,7 @@ public class RowDeserializationSchema
     private static final int DEFAULT_LOG_INTERVAL_MS = 60 * 1000;
 
     public RowDeserializationSchema(
-            TableSchema tableSchema,
+             ResolvedSchema  resolvedSchema,
             DirtyDataStrategy formatErrorStrategy,
             DirtyDataStrategy fieldMissingStrategy,
             DirtyDataStrategy fieldIncrementStrategy,
@@ -94,7 +94,7 @@ public class RowDeserializationSchema
             MetadataConverter[] metadataConverters,
             List<String> headerFields,
             Map<String, String> properties) {
-        this.tableSchema = tableSchema;
+        this.resolvedSchema = resolvedSchema;
         this.formatErrorStrategy = formatErrorStrategy;
         this.fieldMissingStrategy = fieldMissingStrategy;
         this.fieldIncrementStrategy = fieldIncrementStrategy;
@@ -105,17 +105,17 @@ public class RowDeserializationSchema
         this.metadataCollector = new MetadataCollector(hasMetadata, metadataConverters);
         this.headerFields = headerFields == null ? null : new HashSet<>(headerFields);
         this.properties = properties;
-        this.totalColumnSize = tableSchema.getFieldNames().length;
+        this.totalColumnSize =  resolvedSchema.getColumnNames().size();
         int dataColumnSize = 0;
         this.fieldTypes = new ValueType[totalColumnSize];
         this.columnIndexMapping = new HashMap<>();
         this.dataIndexMapping = new HashMap<>();
         for (int index = 0; index < totalColumnSize; index++) {
-            this.columnIndexMapping.put(tableSchema.getFieldNames()[index], index);
+            this.columnIndexMapping.put( resolvedSchema.getColumnNames().get(index), index);
         }
         for (int index = 0; index < totalColumnSize; index++) {
             ValueType type =
-                    ByteSerializer.getTypeIndex(tableSchema.getFieldTypes()[index].getTypeClass());
+                    ByteSerializer.getTypeIndex( resolvedSchema.getColumnDataTypes().get(index).getClass());
             this.fieldTypes[index] = type;
             if (!isHeaderField(index)) {
                 dataIndexMapping.put(dataColumnSize, index);
@@ -127,10 +127,10 @@ public class RowDeserializationSchema
 
     @Override
     public void open(InitializationContext context) {
-        DescriptorProperties descriptorProperties = new DescriptorProperties();
-        descriptorProperties.putProperties(properties);
-        this.tableSchema = SchemaValidator.deriveTableSinkSchema(descriptorProperties);
-        this.fieldDataTypes = tableSchema.getFieldDataTypes();
+        CatalogPropertiesUtil CatalogPropertiesUtil = org.apache.flink.table.catalog.CatalogPropertiesUtil.;
+        CatalogPropertiesUtil.putProperties(properties);
+        this.resolvedSchema = SchemaValidator.deriveTableSinkSchema(CatalogPropertiesUtil);
+        this.fieldDataTypes =  resolvedSchema.getColumnDataTypes().toArray(new DataType[resolvedSchema.getColumnCount()]);
         this.lastLogExceptionTime = System.currentTimeMillis();
         this.lastLogHandleFieldTime = System.currentTimeMillis();
     }
@@ -191,13 +191,13 @@ public class RowDeserializationSchema
     private boolean isOnlyHaveVarbinaryDataField() {
         if (dataColumnSize == 1 && dataIndexMapping.size() == 1) {
             int index = dataIndexMapping.get(0);
-            return isByteArrayType(tableSchema.getFieldNames()[index]);
+            return isByteArrayType( resolvedSchema.getColumnNames().get(index));
         }
         return false;
     }
 
     private boolean isAllHeaderField() {
-        return null != headerFields && headerFields.size() == tableSchema.getFieldNames().length;
+        return null != headerFields && headerFields.size() ==  resolvedSchema.getColumnNames().size();
     }
 
     private void deserializeBytesMessage(BytesMessage message, Collector<RowData> collector) {
@@ -246,11 +246,11 @@ public class RowDeserializationSchema
     }
 
     private boolean isHeaderField(int index) {
-        return headerFields != null && headerFields.contains(tableSchema.getFieldNames()[index]);
+        return headerFields != null && headerFields.contains( resolvedSchema.getColumnNames().get(index));
     }
 
     private String getHeaderValue(BytesMessage message, int index) {
-        Object object = message.getProperty(tableSchema.getFieldNames()[index]);
+        Object object = message.getProperty( resolvedSchema.getColumnNames().get(index));
         return object == null ? "" : (String) object;
     }
 
@@ -273,7 +273,7 @@ public class RowDeserializationSchema
 
     private boolean isByteArrayType(String fieldName) {
         TypeInformation<?> typeInformation =
-                tableSchema.getFieldTypes()[columnIndexMapping.get(fieldName)];
+                 resolvedSchema.getColumnDataTypes().get(columnIndexMapping.get(fieldName)).getLogicalType();
         if (typeInformation != null) {
             ValueType valueType = ByteSerializer.getTypeIndex(typeInformation.getTypeClass());
             return valueType == ValueType.V_ByteArray;
@@ -398,7 +398,7 @@ public class RowDeserializationSchema
 
     @Override
     public TypeInformation<RowData> getProducedType() {
-        return InternalTypeInfo.of((RowType) tableSchema.toRowDataType().getLogicalType());
+        return InternalTypeInfo.of((RowType)  resolvedSchema.toRowDataType().getLogicalType());
     }
 
     // --------------------------------------------------------------------------------------------
@@ -456,7 +456,7 @@ public class RowDeserializationSchema
     /** Builder of {@link RowDeserializationSchema}. */
     public static class Builder {
 
-        private TableSchema schema;
+        private  ResolvedSchema schema;
         private DirtyDataStrategy formatErrorStrategy = DirtyDataStrategy.SKIP;
         private DirtyDataStrategy fieldMissingStrategy = DirtyDataStrategy.SKIP;
         private DirtyDataStrategy fieldIncrementStrategy = DirtyDataStrategy.CUT;
@@ -471,8 +471,8 @@ public class RowDeserializationSchema
 
         public Builder() {}
 
-        public Builder setTableSchema(TableSchema tableSchema) {
-            this.schema = tableSchema;
+        public Builder setResolvedSchema( ResolvedSchema  resolvedSchema) {
+            this.schema = resolvedSchema;
             return this;
         }
 

@@ -24,7 +24,7 @@ import org.apache.rocketmq.flink.source.reader.deserializer.RowDeserializationSc
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.serialization.DeserializationSchema.InitializationContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.util.Collector;
 
@@ -45,14 +45,14 @@ public class RocketMQRowDeserializationSchema implements RocketMQDeserialization
     private transient List<BytesMessage> bytesMessages = new ArrayList<>(1);
 
     public RocketMQRowDeserializationSchema(
-            TableSchema tableSchema,
+            ResolvedSchema resolvedSchema,
             Map<String, String> properties,
             boolean hasMetadata,
             MetadataConverter[] metadataConverters) {
         deserializationSchema =
                 new RowDeserializationSchema.Builder()
                         .setProperties(properties)
-                        .setTableSchema(tableSchema)
+                        .setResolvedSchema(resolvedSchema)
                         .setHasMetadata(hasMetadata)
                         .setMetadataConverters(metadataConverters)
                         .build();

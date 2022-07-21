@@ -33,7 +33,7 @@ import org.junit.Test;
 
 import java.util.Properties;
 
-import static org.apache.rocketmq.flink.legacy.common.util.TestUtils.setFieldValue;
+import static org.apache.rocketmq.flink.utils.TestUtils.setFieldValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 

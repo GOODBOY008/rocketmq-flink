@@ -22,7 +22,9 @@ import org.apache.rocketmq.common.message.MessageExt;
 
 import org.apache.flink.api.common.serialization.DeserializationSchema.InitializationContext;
 import org.apache.flink.table.api.DataTypes;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.Column;
+import org.apache.flink.table.catalog.ResolvedSchema;
+import org.apache.flink.table.catalog.UniqueConstraint;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.util.Collector;
 
@@ -31,6 +33,7 @@ import org.powermock.reflect.Whitebox;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -43,24 +46,25 @@ public class RocketMQRowDeserializationSchemaTest {
 
     @Test
     public void testDeserialize() {
-        TableSchema tableSchema =
-                new TableSchema.Builder()
-                        .field("int", DataTypes.INT())
-                        .field("varchar", DataTypes.VARCHAR(100))
-                        .field("bool", DataTypes.BOOLEAN())
-                        .field("char", DataTypes.CHAR(5))
-                        .field("tinyint", DataTypes.TINYINT())
-                        .field("decimal", DataTypes.DECIMAL(10, 5))
-                        .field("smallint", DataTypes.SMALLINT())
-                        .field("bigint", DataTypes.BIGINT())
-                        .field("float", DataTypes.FLOAT())
-                        .field("double", DataTypes.DOUBLE())
-                        .field("date", DataTypes.DATE())
-                        .field("time", DataTypes.TIME())
-                        .field("timestamp", DataTypes.TIMESTAMP())
-                        .build();
+         ResolvedSchema  resolvedSchema =
+                new  ResolvedSchema(
+                        Arrays.asList(
+                        Column.physical("int", DataTypes.INT())
+                        ,Column.physical("varchar", DataTypes.VARCHAR(100))
+                        ,Column.physical("bool", DataTypes.BOOLEAN())
+                        ,Column.physical("char", DataTypes.CHAR(5))
+                        ,Column.physical("tinyint", DataTypes.TINYINT())
+                        ,Column.physical("decimal", DataTypes.DECIMAL(10, 5))
+                        ,Column.physical("smallint", DataTypes.SMALLINT())
+                        ,Column.physical("bigint", DataTypes.BIGINT())
+                        ,Column.physical("float", DataTypes.FLOAT())
+                        ,Column.physical("double", DataTypes.DOUBLE())
+                        ,Column.physical("date", DataTypes.DATE())
+                        ,Column.physical("time", DataTypes.TIME())
+                        ,Column.physical("timestamp", DataTypes.TIMESTAMP()))
+                        ,Collections.emptyList(), null);
         RocketMQRowDeserializationSchema recordDeserializer =
-                new RocketMQRowDeserializationSchema(tableSchema, new HashMap<>(), false, null);
+                new RocketMQRowDeserializationSchema( resolvedSchema, new HashMap<>(), false, null);
         RowDeserializationSchema sourceDeserializer = mock(RowDeserializationSchema.class);
         InitializationContext initializationContext = mock(InitializationContext.class);
         doNothing().when(sourceDeserializer).open(initializationContext);

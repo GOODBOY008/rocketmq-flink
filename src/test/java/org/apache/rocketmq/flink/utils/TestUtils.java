@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.rocketmq.flink.legacy.common.util;
+package org.apache.rocketmq.flink.utils;
 
 import java.lang.reflect.Field;
 

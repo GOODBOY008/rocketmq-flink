@@ -23,13 +23,13 @@ import org.apache.rocketmq.flink.legacy.RocketMQSink;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.table.api.DataTypes;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.CatalogPropertiesUtil;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.connector.sink.SinkFunctionProvider;
 import org.apache.flink.table.connector.sink.abilities.SupportsWritingMetadata;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.descriptors.DescriptorProperties;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.utils.LegacyTypeInfoDataTypeConverter;
 import org.apache.flink.types.RowKind;
@@ -46,8 +46,8 @@ import static org.apache.rocketmq.flink.sink.table.RocketMQRowDataConverter.Meta
 /** Defines the dynamic table sink of RocketMQ. */
 public class RocketMQDynamicTableSink implements DynamicTableSink, SupportsWritingMetadata {
 
-    private final DescriptorProperties properties;
-    private final TableSchema schema;
+    private final CatalogPropertiesUtil properties;
+    private final ResolvedSchema schema;
 
     private final String topic;
     private final String producerGroup;
@@ -69,8 +69,8 @@ public class RocketMQDynamicTableSink implements DynamicTableSink, SupportsWriti
     private List<String> metadataKeys;
 
     public RocketMQDynamicTableSink(
-            DescriptorProperties properties,
-            TableSchema schema,
+            CatalogPropertiesUtil properties,
+            ResolvedSchema schema,
             String topic,
             String producerGroup,
             String nameServerAddress,

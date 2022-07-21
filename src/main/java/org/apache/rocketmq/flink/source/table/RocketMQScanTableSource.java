@@ -28,7 +28,7 @@ import org.apache.rocketmq.flink.source.reader.deserializer.RocketMQRowDeseriali
 import org.apache.rocketmq.flink.source.reader.deserializer.RowDeserializationSchema.MetadataConverter;
 
 import org.apache.flink.table.api.DataTypes;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.connector.source.ScanTableSource;
@@ -37,7 +37,7 @@ import org.apache.flink.table.connector.source.SourceProvider;
 import org.apache.flink.table.connector.source.abilities.SupportsReadingMetadata;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.StringData;
-import org.apache.flink.table.descriptors.DescriptorProperties;
+import org.apache.flink.table.catalog.CatalogPropertiesUtil;
 import org.apache.flink.table.types.DataType;
 
 import java.util.Collections;
@@ -53,8 +53,8 @@ import static org.apache.flink.api.connector.source.Boundedness.CONTINUOUS_UNBOU
 /** Defines the scan table source of RocketMQ. */
 public class RocketMQScanTableSource implements ScanTableSource, SupportsReadingMetadata {
 
-    private final DescriptorProperties properties;
-    private final TableSchema schema;
+    private final CatalogPropertiesUtil properties;
+    private final  ResolvedSchema schema;
 
     private final String topic;
     private final String consumerGroup;
@@ -71,8 +71,8 @@ public class RocketMQScanTableSource implements ScanTableSource, SupportsReading
     private List<String> metadataKeys;
 
     public RocketMQScanTableSource(
-            DescriptorProperties properties,
-            TableSchema schema,
+            CatalogPropertiesUtil properties,
+             ResolvedSchema schema,
             String topic,
             String consumerGroup,
             String nameServerAddress,
@@ -187,7 +187,7 @@ public class RocketMQScanTableSource implements ScanTableSource, SupportsReading
     private KeyValueDeserializationSchema<RowData> createKeyValueDeserializationSchema() {
         return new RowKeyValueDeserializationSchema.Builder()
                 .setProperties(properties.asMap())
-                .setTableSchema(schema)
+                .setResolvedSchema(schema)
                 .build();
     }
 

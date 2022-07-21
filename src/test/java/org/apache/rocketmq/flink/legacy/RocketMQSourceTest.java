@@ -40,7 +40,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.apache.rocketmq.flink.legacy.common.util.TestUtils.setFieldValue;
+import static org.apache.rocketmq.flink.utils.TestUtils.setFieldValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;

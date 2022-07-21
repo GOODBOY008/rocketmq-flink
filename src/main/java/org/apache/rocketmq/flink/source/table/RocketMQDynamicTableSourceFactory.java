@@ -20,14 +20,14 @@ package org.apache.rocketmq.flink.source.table;
 
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.source.DynamicTableSource;
-import org.apache.flink.table.descriptors.DescriptorProperties;
+import org.apache.flink.table.catalog.CatalogPropertiesUtil;
 import org.apache.flink.table.factories.DynamicTableFactory;
 import org.apache.flink.table.factories.DynamicTableSourceFactory;
 import org.apache.flink.table.factories.Factory;
 import org.apache.flink.table.factories.FactoryUtil;
-import org.apache.flink.table.utils.TableSchemaUtils;
+
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.StringUtils;
 
@@ -152,13 +152,13 @@ public class RocketMQDynamicTableSourceFactory implements DynamicTableSourceFact
         long partitionDiscoveryIntervalMs =
                 configuration.getLong(OPTIONAL_PARTITION_DISCOVERY_INTERVAL_MS);
         boolean useNewApi = configuration.getBoolean(OPTIONAL_USE_NEW_API);
-        DescriptorProperties descriptorProperties = new DescriptorProperties();
-        descriptorProperties.putProperties(rawProperties);
-        TableSchema physicalSchema =
-                TableSchemaUtils.getPhysicalSchema(context.getCatalogTable().getSchema());
-        descriptorProperties.putTableSchema("schema", physicalSchema);
+        CatalogPropertiesUtil CatalogPropertiesUtil = new CatalogPropertiesUtil();
+        CatalogPropertiesUtil.putProperties(rawProperties);
+         ResolvedSchema physicalSchema =
+                 ResolvedSchemaUtils.getPhysicalSchema(context.getCatalogTable().getSchema());
+        CatalogPropertiesUtil.put ResolvedSchema("schema", physicalSchema);
         return new RocketMQScanTableSource(
-                descriptorProperties,
+                CatalogPropertiesUtil,
                 physicalSchema,
                 topic,
                 consumerGroup,
