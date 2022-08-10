@@ -21,6 +21,7 @@ package org.apache.rocketmq.flink.source.enumerator;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageQueue;
+import org.apache.rocketmq.flink.legacy.RocketMQConfig;
 import org.apache.rocketmq.flink.source.split.RocketMQPartitionSplit;
 
 import org.apache.flink.annotation.Internal;
@@ -303,7 +304,7 @@ public class RocketMQSourceEnumerator
 
     private void initialRocketMQConsumer() {
         try {
-            consumer = new DefaultMQPullConsumer(consumerGroup);
+            consumer = new DefaultMQPullConsumer(consumerGroup, RocketMQConfig.buildAclRPCHook(props));
             consumer.setNamesrvAddr(nameServerAddress);
             consumer.setInstanceName(
                     String.join(

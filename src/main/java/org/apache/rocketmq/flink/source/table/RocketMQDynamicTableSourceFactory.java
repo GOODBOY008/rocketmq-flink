@@ -162,7 +162,7 @@ public class RocketMQDynamicTableSourceFactory implements DynamicTableSourceFact
                 nameServerAddress,
                 tag,
                 stopInMs,
-                startMessageOffset,
+                accessKey, secretKey, accessChannel, startMessageOffset,
                 startMessageOffset < 0 ? startTime : -1L,
                 partitionDiscoveryIntervalMs,
                 useNewApi);
@@ -197,11 +197,11 @@ public class RocketMQDynamicTableSourceFactory implements DynamicTableSourceFact
             final String catalogOptionValue = entry.getValue();
             normalizedOptions.put(
                     requiredOptionKeysLowerCaseToOriginal.containsKey(
-                                    catalogOptionKey.toLowerCase())
+                            catalogOptionKey.toLowerCase())
                             ? requiredOptionKeysLowerCaseToOriginal.get(
-                                    catalogOptionKey.toLowerCase())
+                            catalogOptionKey.toLowerCase())
                             : optionalOptionKeysLowerCaseToOriginal.getOrDefault(
-                                    catalogOptionKey.toLowerCase(), catalogOptionKey),
+                            catalogOptionKey.toLowerCase(), catalogOptionKey),
                     catalogOptionValue);
         }
         return normalizedOptions;

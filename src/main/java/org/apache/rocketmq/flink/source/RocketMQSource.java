@@ -62,6 +62,9 @@ public class RocketMQSource<OUT>
     private final long startTime;
     private final long startOffset;
     private final long partitionDiscoveryIntervalMs;
+    private final String accessKey;
+    private final String secretKey;
+    private final String accessChannel;
 
     // Boundedness
     private final Boundedness boundedness;
@@ -76,6 +79,9 @@ public class RocketMQSource<OUT>
             long startTime,
             long startOffset,
             long partitionDiscoveryIntervalMs,
+            String accessKey,
+            String secretKey,
+            String accessChannel,
             Boundedness boundedness,
             RocketMQDeserializationSchema<OUT> deserializationSchema) {
         this.topic = topic;
@@ -86,6 +92,9 @@ public class RocketMQSource<OUT>
         this.startTime = startTime;
         this.startOffset = startOffset;
         this.partitionDiscoveryIntervalMs = partitionDiscoveryIntervalMs;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.accessChannel = accessChannel;
         this.boundedness = boundedness;
         this.deserializationSchema = deserializationSchema;
     }

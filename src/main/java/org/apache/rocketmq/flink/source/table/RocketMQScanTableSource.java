@@ -63,6 +63,9 @@ public class RocketMQScanTableSource implements ScanTableSource, SupportsReading
 
     private final long stopInMs;
     private final long partitionDiscoveryIntervalMs;
+    private final String accessKey;
+    private final String secretKey;
+    private final String accessChannel;
     private final long startMessageOffset;
     private final long startTime;
     private final boolean useNewApi;
@@ -77,7 +80,7 @@ public class RocketMQScanTableSource implements ScanTableSource, SupportsReading
             String nameServerAddress,
             String tag,
             long stopInMs,
-            long startMessageOffset,
+            String accessKey, String secretKey, String accessChannel, long startMessageOffset,
             long startTime,
             long partitionDiscoveryIntervalMs,
             boolean useNewApi) {
@@ -88,6 +91,9 @@ public class RocketMQScanTableSource implements ScanTableSource, SupportsReading
         this.nameServerAddress = nameServerAddress;
         this.tag = tag;
         this.stopInMs = stopInMs;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.accessChannel = accessChannel;
         this.startMessageOffset = startMessageOffset;
         this.startTime = startTime;
         this.partitionDiscoveryIntervalMs = partitionDiscoveryIntervalMs;
@@ -113,6 +119,9 @@ public class RocketMQScanTableSource implements ScanTableSource, SupportsReading
                             startTime,
                             startMessageOffset < 0 ? 0 : startMessageOffset,
                             partitionDiscoveryIntervalMs,
+                            accessKey,
+                            secretKey,
+                            accessChannel,
                             isBounded() ? BOUNDED : CONTINUOUS_UNBOUNDED,
                             createRocketMQDeserializationSchema()));
         } else {
@@ -147,7 +156,7 @@ public class RocketMQScanTableSource implements ScanTableSource, SupportsReading
                         nameServerAddress,
                         tag,
                         stopInMs,
-                        startMessageOffset,
+                        accessKey, secretKey, accessChannel, startMessageOffset,
                         startTime,
                         partitionDiscoveryIntervalMs,
                         useNewApi);
