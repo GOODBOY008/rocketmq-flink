@@ -18,7 +18,9 @@
 
 package org.apache.rocketmq.flink.catalog;
 
+import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 
@@ -214,6 +216,14 @@ public class RocketMQCatalog extends AbstractCatalog {
     @Override
     public List<CatalogPartitionSpec> listPartitions(ObjectPath tablePath)
             throws TableNotExistException, TableNotPartitionedException, CatalogException {
+        if (!tableExists(tablePath)) {
+            throw new TableNotExistException(RocketMQCatalogFactoryOptions.IDENTIFIER, tablePath);
+        }
+        try {
+            mqAdminExt.examineTopicConfig(namesrvAddr, tablePath.getObjectName());
+        } catch (Exception e) {
+            throw new CatalogException(e);
+        }
         throw new UnsupportedOperationException();
     }
 
