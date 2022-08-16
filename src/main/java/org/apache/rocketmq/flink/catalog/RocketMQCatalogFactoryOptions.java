@@ -18,6 +18,7 @@
 
 package org.apache.rocketmq.flink.catalog;
 
+import org.apache.rocketmq.flink.common.constant.SchemaRegistryConstant;
 import org.apache.rocketmq.flink.legacy.RocketMQConfig;
 
 import org.apache.flink.annotation.Internal;
@@ -41,6 +42,12 @@ public final class RocketMQCatalogFactoryOptions {
                     .stringType()
                     .defaultValue("http://localhost:8080")
                     .withDescription("Required rocketmq name server address");
+
+    public static final ConfigOption<String> SCHEMA_REGISTRY_BASE_URL =
+        ConfigOptions.key(SchemaRegistryConstant.SCHEMA_REGISTRY_BASE_URL_KEY)
+            .stringType()
+            .defaultValue(SchemaRegistryConstant.SCHEMA_REGISTRY_BASE_URL)
+            .withDescription("Required schema registry server address");
 
     // TODO: 2022/7/15 add other config options
 

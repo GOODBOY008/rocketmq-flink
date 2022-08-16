@@ -30,6 +30,7 @@ import java.util.Set;
 import static org.apache.rocketmq.flink.catalog.RocketMQCatalogFactoryOptions.DEFAULT_DATABASE;
 import static org.apache.rocketmq.flink.catalog.RocketMQCatalogFactoryOptions.IDENTIFIER;
 import static org.apache.rocketmq.flink.catalog.RocketMQCatalogFactoryOptions.NAME_SERVER_ADDR;
+import static org.apache.rocketmq.flink.catalog.RocketMQCatalogFactoryOptions.SCHEMA_REGISTRY_BASE_URL;
 
 /** RocketMQ {@CatalogFactory}. */
 public class RocketMQCatalogFactory implements CatalogFactory {
@@ -42,7 +43,8 @@ public class RocketMQCatalogFactory implements CatalogFactory {
         return new RocketMQCatalog(
                 context.getName(),
                 helper.getOptions().get(DEFAULT_DATABASE),
-                helper.getOptions().get(NAME_SERVER_ADDR));
+                helper.getOptions().get(NAME_SERVER_ADDR),
+                helper.getOptions().get(SCHEMA_REGISTRY_BASE_URL));
     }
 
     @Override
