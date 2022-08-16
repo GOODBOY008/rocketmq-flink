@@ -27,7 +27,6 @@ import org.apache.flink.table.types.DataType;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.flink.common.AvroSchemaConverter;
 import org.apache.rocketmq.flink.common.constant.RocketMqCatalogConstant;
-import org.apache.rocketmq.flink.common.constant.SchemaRegistryConstant;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 import org.apache.rocketmq.schema.registry.client.SchemaRegistryClient;
 import org.apache.rocketmq.schema.registry.client.SchemaRegistryClientFactory;
@@ -68,6 +67,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 /** Expose a RocketMQ instance as a database catalog. */
 public class RocketMQCatalog extends AbstractCatalog {
@@ -121,28 +122,38 @@ public class RocketMQCatalog extends AbstractCatalog {
 
     @Override
     public List<String> listDatabases() throws CatalogException {
-        return null;
+        return Collections.singletonList(getDefaultDatabase());
     }
 
     @Override
     public CatalogDatabase getDatabase(String databaseName)
             throws DatabaseNotExistException, CatalogException {
-        Map<String, String> properties = new HashMap<>();
-        return new CatalogDatabaseImpl(properties, databaseName);
+        if (StringUtils.isEmpty(databaseName)) {
+            throw new CatalogException("Database name can not be null or empty.");
+        }
+        if (!databaseExists(databaseName)) {
+            throw new DatabaseNotExistException(getName(), databaseName);
+        } else {
+            return new CatalogDatabaseImpl(new HashMap<>(), null);
+        }
     }
 
     @Override
     public boolean databaseExists(String databaseName) throws CatalogException {
-        return false;
+        return getDefaultDatabase().equals(databaseName);
     }
 
     @Override
     public void createDatabase(String name, CatalogDatabase database, boolean ignoreIfExists)
-            throws DatabaseAlreadyExistException, CatalogException {}
+            throws DatabaseAlreadyExistException, CatalogException {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void dropDatabase(String name, boolean ignoreIfNotExists, boolean cascade)
-            throws DatabaseNotExistException, DatabaseNotEmptyException, CatalogException {}
+            throws DatabaseNotExistException, DatabaseNotEmptyException, CatalogException {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public List<String> listTables(String databaseName)
