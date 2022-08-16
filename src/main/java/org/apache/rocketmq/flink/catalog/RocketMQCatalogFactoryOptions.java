@@ -44,10 +44,10 @@ public final class RocketMQCatalogFactoryOptions {
                     .withDescription("Required rocketmq name server address");
 
     public static final ConfigOption<String> SCHEMA_REGISTRY_BASE_URL =
-        ConfigOptions.key(SchemaRegistryConstant.SCHEMA_REGISTRY_BASE_URL_KEY)
-            .stringType()
-            .defaultValue(SchemaRegistryConstant.SCHEMA_REGISTRY_BASE_URL)
-            .withDescription("Required schema registry server address");
+            ConfigOptions.key(SchemaRegistryConstant.SCHEMA_REGISTRY_BASE_URL_KEY)
+                    .stringType()
+                    .defaultValue(SchemaRegistryConstant.SCHEMA_REGISTRY_BASE_URL)
+                    .withDescription("Required schema registry server address");
 
     // TODO: 2022/7/15 add other config options
 

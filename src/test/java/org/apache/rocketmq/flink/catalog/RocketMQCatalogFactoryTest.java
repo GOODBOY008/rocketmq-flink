@@ -18,23 +18,29 @@
 
 package org.apache.rocketmq.flink.catalog;
 
-import java.util.HashMap;
-import java.util.Set;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.table.catalog.Catalog;
 import org.apache.flink.table.factories.FactoryUtil;
-import org.junit.Before;
+
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.HashMap;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class RocketMQCatalogFactoryTest {
 
     @Test
     public void testCreateCatalog() {
         RocketMQCatalogFactory factory = new RocketMQCatalogFactory();
-        FactoryUtil.DefaultCatalogContext context = new FactoryUtil.DefaultCatalogContext("rocketmq-catalog",
-            new HashMap<>(), null, this.getClass().getClassLoader());
+        FactoryUtil.DefaultCatalogContext context =
+                new FactoryUtil.DefaultCatalogContext(
+                        "rocketmq-catalog",
+                        new HashMap<>(),
+                        null,
+                        this.getClass().getClassLoader());
         Catalog catalog = factory.createCatalog(context);
         assertNotNull(catalog);
     }

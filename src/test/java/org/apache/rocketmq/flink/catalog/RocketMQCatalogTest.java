@@ -15,18 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.rocketmq.flink.catalog;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import org.apache.flink.table.catalog.Catalog;
+import org.apache.rocketmq.flink.common.constant.SchemaRegistryConstant;
+import org.apache.rocketmq.schema.registry.client.SchemaRegistryClient;
+import org.apache.rocketmq.schema.registry.common.dto.GetSchemaResponse;
+import org.apache.rocketmq.schema.registry.common.model.SchemaType;
+
 import org.apache.flink.table.catalog.CatalogBaseTable;
 import org.apache.flink.table.catalog.CatalogDatabase;
-import org.apache.flink.table.catalog.DefaultCatalogTable;
 import org.apache.flink.table.catalog.ObjectPath;
 import org.apache.flink.table.catalog.exceptions.DatabaseAlreadyExistException;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotEmptyException;
@@ -42,11 +39,7 @@ import org.apache.flink.table.catalog.exceptions.TableNotPartitionedException;
 import org.apache.flink.table.catalog.stats.CatalogColumnStatistics;
 import org.apache.flink.table.catalog.stats.CatalogTableStatistics;
 import org.apache.flink.table.factories.Factory;
-import org.apache.flink.table.factories.FactoryUtil;
-import org.apache.rocketmq.flink.common.constant.SchemaRegistryConstant;
-import org.apache.rocketmq.schema.registry.client.SchemaRegistryClient;
-import org.apache.rocketmq.schema.registry.common.dto.GetSchemaResponse;
-import org.apache.rocketmq.schema.registry.common.model.SchemaType;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,22 +47,30 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static org.junit.Assert.*;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RocketMQCatalogTest {
-
-    @Mock
-    private SchemaRegistryClient schemaRegistryClient;
-    @Mock
-    private GetSchemaResponse getSchemaResponse;
-
+    @Mock private SchemaRegistryClient schemaRegistryClient;
+    @Mock private GetSchemaResponse getSchemaResponse;
     private RocketMQCatalog rocketMQCatalog;
 
     @Before
     public void setUp() throws Exception {
-        rocketMQCatalog = new RocketMQCatalog("rocketmq-catalog", "default",
-            "http://localhost:8080", SchemaRegistryConstant.SCHEMA_REGISTRY_BASE_URL);
+        rocketMQCatalog =
+                new RocketMQCatalog(
+                        "rocketmq-catalog",
+                        "default",
+                        "http://localhost:8080",
+                        SchemaRegistryConstant.SCHEMA_REGISTRY_BASE_URL);
 
         Field declaredField = rocketMQCatalog.getClass().getDeclaredField("schemaRegistryClient");
         declaredField.setAccessible(true);
@@ -81,9 +82,11 @@ public class RocketMQCatalogTest {
 
         Mockito.when(schemaRegistryClient.getSchemaBySubject("test")).thenReturn(getSchemaResponse);
         Mockito.when(getSchemaResponse.getType()).thenReturn(SchemaType.AVRO);
-        Mockito.when(getSchemaResponse.getIdl()).thenReturn("{\"type\":\"record\",\"name\":\"Charge\"," +
-            "\"namespace\":\"org.apache.rocketmq.schema.registry.example.serde\",\"fields\":[{\"name\":\"item\"," +
-            "\"type\":\"string\"},{\"name\":\"amount\",\"type\":\"double\"}]}");
+        Mockito.when(getSchemaResponse.getIdl())
+                .thenReturn(
+                        "{\"type\":\"record\",\"name\":\"Charge\","
+                                + "\"namespace\":\"org.apache.rocketmq.schema.registry.example.serde\",\"fields\":[{\"name\":\"item\","
+                                + "\"type\":\"string\"},{\"name\":\"amount\",\"type\":\"double\"}]}");
     }
 
     @Test
@@ -201,7 +204,8 @@ public class RocketMQCatalogTest {
     }
 
     @Test(expected = UnsupportedOperationException.class)
-    public void testCreateFunction() throws FunctionAlreadyExistException, DatabaseNotExistException {
+    public void testCreateFunction()
+            throws FunctionAlreadyExistException, DatabaseNotExistException {
         rocketMQCatalog.createFunction(null, null, false);
     }
 
@@ -236,24 +240,21 @@ public class RocketMQCatalogTest {
     }
 
     @Test
-    public void testListPartitions() {
-    }
+    public void testListPartitions() {}
 
     @Test
-    public void testListPartitionsByFilter() {
-    }
+    public void testListPartitionsByFilter() {}
 
     @Test
-    public void testGetPartition() {
-    }
+    public void testGetPartition() {}
 
     @Test
-    public void testPartitionExists() {
-    }
+    public void testPartitionExists() {}
 
     @Test(expected = UnsupportedOperationException.class)
-    public void testCreatePartition() throws TableNotPartitionedException, TableNotExistException,
-        PartitionSpecInvalidException, PartitionAlreadyExistsException {
+    public void testCreatePartition()
+            throws TableNotPartitionedException, TableNotExistException,
+                    PartitionSpecInvalidException, PartitionAlreadyExistsException {
         rocketMQCatalog.createPartition(null, null, null, false);
     }
 
@@ -287,7 +288,8 @@ public class RocketMQCatalogTest {
 
     @Test
     public void testGetPartitionColumnStatistics() throws PartitionNotExistException {
-        CatalogColumnStatistics statistics = rocketMQCatalog.getPartitionColumnStatistics(null, null);
+        CatalogColumnStatistics statistics =
+                rocketMQCatalog.getPartitionColumnStatistics(null, null);
         assertEquals(statistics, CatalogColumnStatistics.UNKNOWN);
     }
 

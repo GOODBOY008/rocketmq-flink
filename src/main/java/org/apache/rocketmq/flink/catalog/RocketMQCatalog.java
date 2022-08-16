@@ -18,14 +18,7 @@
 
 package org.apache.rocketmq.flink.catalog;
 
-import com.google.common.collect.Maps;
-import java.util.Collections;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.flink.table.api.Schema;
-import org.apache.flink.table.catalog.CatalogTable;
-import org.apache.flink.table.types.DataType;
 import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.flink.common.AvroSchemaConverter;
 import org.apache.rocketmq.flink.common.constant.RocketMqCatalogConstant;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 import org.apache.rocketmq.schema.registry.client.SchemaRegistryClient;
@@ -34,6 +27,8 @@ import org.apache.rocketmq.schema.registry.common.dto.GetSchemaResponse;
 import org.apache.rocketmq.schema.registry.common.model.SchemaType;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 
+import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
+import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.catalog.AbstractCatalog;
 import org.apache.flink.table.catalog.CatalogBaseTable;
 import org.apache.flink.table.catalog.CatalogDatabase;
@@ -41,6 +36,7 @@ import org.apache.flink.table.catalog.CatalogDatabaseImpl;
 import org.apache.flink.table.catalog.CatalogFunction;
 import org.apache.flink.table.catalog.CatalogPartition;
 import org.apache.flink.table.catalog.CatalogPartitionSpec;
+import org.apache.flink.table.catalog.CatalogTable;
 import org.apache.flink.table.catalog.ObjectPath;
 import org.apache.flink.table.catalog.exceptions.CatalogException;
 import org.apache.flink.table.catalog.exceptions.DatabaseAlreadyExistException;
@@ -58,17 +54,22 @@ import org.apache.flink.table.catalog.stats.CatalogColumnStatistics;
 import org.apache.flink.table.catalog.stats.CatalogTableStatistics;
 import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.table.factories.Factory;
+import org.apache.flink.table.types.DataType;
+import org.apache.flink.table.types.FieldsDataType;
+import org.apache.flink.table.types.logical.RowType;
+import org.apache.flink.table.types.utils.TypeConversions;
 
+import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 /** Expose a RocketMQ instance as a database catalog. */
 public class RocketMQCatalog extends AbstractCatalog {
@@ -80,7 +81,8 @@ public class RocketMQCatalog extends AbstractCatalog {
     private DefaultMQAdminExt mqAdminExt;
     private SchemaRegistryClient schemaRegistryClient;
 
-    public RocketMQCatalog(String catalogName, String database, String namesrvAddr, String schemaRegistryUrl) {
+    public RocketMQCatalog(
+            String catalogName, String database, String namesrvAddr, String schemaRegistryUrl) {
         super(catalogName, database);
         this.namesrvAddr = namesrvAddr;
         this.schemaRegistryUrl = schemaRegistryUrl;
@@ -105,17 +107,17 @@ public class RocketMQCatalog extends AbstractCatalog {
                         "Failed to create RocketMQ admin using :" + namesrvAddr, e);
             }
         }
-        if(schemaRegistryClient == null){
+        if (schemaRegistryClient == null) {
             schemaRegistryClient = SchemaRegistryClientFactory.newClient(schemaRegistryUrl, null);
         }
     }
 
     @Override
     public void close() throws CatalogException {
-        if (Objects.nonNull(mqAdminExt)){
+        if (Objects.nonNull(mqAdminExt)) {
             mqAdminExt.shutdown();
         }
-        if (Objects.nonNull(schemaRegistryClient)){
+        if (Objects.nonNull(schemaRegistryClient)) {
             schemaRegistryClient = null;
         }
     }
@@ -171,7 +173,7 @@ public class RocketMQCatalog extends AbstractCatalog {
 
     @Override
     public CatalogBaseTable getTable(ObjectPath tablePath)
-        throws TableNotExistException, CatalogException {
+            throws TableNotExistException, CatalogException {
         if (!tableExists(tablePath)) {
             throw new TableNotExistException(getName(), tablePath);
         }
@@ -181,25 +183,31 @@ public class RocketMQCatalog extends AbstractCatalog {
             if (getSchemaResponse.getType() != SchemaType.AVRO) {
                 throw new CatalogException("Only support avro schema.");
             }
-            return getCatalogTableForSchema(subject,getSchemaResponse);
+            return getCatalogTableForSchema(subject, getSchemaResponse);
         } catch (Exception e) {
             throw new CatalogException("Fail to get schema from schema registry client.", e);
         }
     }
 
-    private CatalogTable getCatalogTableForSchema(String topic,GetSchemaResponse getSchemaResponse) {
-        org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(getSchemaResponse.getIdl());
+    private CatalogTable getCatalogTableForSchema(
+            String topic, GetSchemaResponse getSchemaResponse) {
+        DataType dataType = AvroSchemaConverter.convertToDataType(getSchemaResponse.getIdl());
         Schema.Builder builder = Schema.newBuilder();
-        for (org.apache.avro.Schema.Field field : avroSchema.getFields()) {
-            org.apache.avro.Schema.Type type = field.schema().getType();
-            DataType dataType = AvroSchemaConverter.convertToDataType(type.getName());
-            builder.column(field.name(), dataType);
+        if (dataType instanceof FieldsDataType) {
+            FieldsDataType fieldsDataType = (FieldsDataType) dataType;
+            RowType rowType = (RowType) fieldsDataType.getLogicalType();
+            for (RowType.RowField field : rowType.getFields()) {
+                DataType toDataType = TypeConversions.fromLogicalToDataType(field.getType());
+                builder.column(field.getName(), toDataType);
+            }
         }
         Schema schema = builder.build();
         Map<String, String> options = Maps.newHashMap();
         options.put(RocketMqCatalogConstant.CONNECTOR, RocketMqCatalogConstant.ROCKETMQ_CONNECTOR);
         options.put(RocketMqCatalogConstant.TOPIC, topic);
-        options.put(RocketMqCatalogConstant.NAME_SERVER_ADDRESS, mqAdminExt == null ? "" : mqAdminExt.getNamesrvAddr());
+        options.put(
+                RocketMqCatalogConstant.NAME_SERVER_ADDRESS,
+                mqAdminExt == null ? "" : mqAdminExt.getNamesrvAddr());
         return CatalogTable.of(schema, null, Collections.emptyList(), options);
     }
 

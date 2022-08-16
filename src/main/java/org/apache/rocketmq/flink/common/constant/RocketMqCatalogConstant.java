@@ -18,9 +18,7 @@
 
 package org.apache.rocketmq.flink.common.constant;
 
-/**
- * @author lixiaoshuang
- */
+/** RocketMqCatalogConstant. */
 public class RocketMqCatalogConstant {
     public static final String CONNECTOR = "connector";
 
