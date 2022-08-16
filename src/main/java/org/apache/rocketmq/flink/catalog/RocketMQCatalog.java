@@ -199,7 +199,7 @@ public class RocketMQCatalog extends AbstractCatalog {
         Map<String, String> options = Maps.newHashMap();
         options.put(RocketMqCatalogConstant.CONNECTOR, RocketMqCatalogConstant.ROCKETMQ_CONNECTOR);
         options.put(RocketMqCatalogConstant.TOPIC, topic);
-        options.put(RocketMqCatalogConstant.NAME_SERVER_ADDRESS,mqAdminExt.getNamesrvAddr());
+        options.put(RocketMqCatalogConstant.NAME_SERVER_ADDRESS, mqAdminExt == null ? "" : mqAdminExt.getNamesrvAddr());
         return CatalogTable.of(schema, null, Collections.emptyList(), options);
     }
 
