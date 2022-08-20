@@ -18,38 +18,13 @@
 
 package org.apache.rocketmq.flink.catalog;
 
-import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.flink.common.constant.RocketMqCatalogConstant;
-import org.apache.rocketmq.remoting.protocol.LanguageCode;
-import org.apache.rocketmq.schema.registry.client.SchemaRegistryClient;
-import org.apache.rocketmq.schema.registry.client.SchemaRegistryClientFactory;
-import org.apache.rocketmq.schema.registry.common.dto.GetSchemaResponse;
-import org.apache.rocketmq.schema.registry.common.model.SchemaType;
-import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
-
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
 import org.apache.flink.table.api.Schema;
-import org.apache.flink.table.catalog.AbstractCatalog;
-import org.apache.flink.table.catalog.CatalogBaseTable;
-import org.apache.flink.table.catalog.CatalogDatabase;
-import org.apache.flink.table.catalog.CatalogDatabaseImpl;
-import org.apache.flink.table.catalog.CatalogFunction;
-import org.apache.flink.table.catalog.CatalogPartition;
-import org.apache.flink.table.catalog.CatalogPartitionSpec;
-import org.apache.flink.table.catalog.CatalogTable;
-import org.apache.flink.table.catalog.ObjectPath;
-import org.apache.flink.table.catalog.exceptions.CatalogException;
-import org.apache.flink.table.catalog.exceptions.DatabaseAlreadyExistException;
-import org.apache.flink.table.catalog.exceptions.DatabaseNotEmptyException;
-import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
-import org.apache.flink.table.catalog.exceptions.FunctionAlreadyExistException;
-import org.apache.flink.table.catalog.exceptions.FunctionNotExistException;
-import org.apache.flink.table.catalog.exceptions.PartitionAlreadyExistsException;
-import org.apache.flink.table.catalog.exceptions.PartitionNotExistException;
-import org.apache.flink.table.catalog.exceptions.PartitionSpecInvalidException;
-import org.apache.flink.table.catalog.exceptions.TableAlreadyExistException;
-import org.apache.flink.table.catalog.exceptions.TableNotExistException;
-import org.apache.flink.table.catalog.exceptions.TableNotPartitionedException;
+import org.apache.flink.table.catalog.*;
+import org.apache.flink.table.catalog.exceptions.*;
 import org.apache.flink.table.catalog.stats.CatalogColumnStatistics;
 import org.apache.flink.table.catalog.stats.CatalogTableStatistics;
 import org.apache.flink.table.expressions.Expression;
@@ -58,20 +33,27 @@ import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.FieldsDataType;
 import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.table.types.utils.TypeConversions;
-
-import com.google.common.collect.Maps;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.admin.TopicStatsTable;
+import org.apache.rocketmq.flink.common.constant.RocketMqCatalogConstant;
+import org.apache.rocketmq.remoting.exception.RemotingException;
+import org.apache.rocketmq.remoting.protocol.LanguageCode;
+import org.apache.rocketmq.schema.registry.client.SchemaRegistryClient;
+import org.apache.rocketmq.schema.registry.client.SchemaRegistryClientFactory;
+import org.apache.rocketmq.schema.registry.common.dto.GetSchemaResponse;
+import org.apache.rocketmq.schema.registry.common.model.SchemaType;
+import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
-/** Expose a RocketMQ instance as a database catalog. */
+import static org.apache.flink.util.Preconditions.checkNotNull;
+
+/**
+ * Expose a RocketMQ instance as a database catalog.
+ */
 public class RocketMQCatalog extends AbstractCatalog {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocketMQCatalog.class);
@@ -313,13 +295,66 @@ public class RocketMQCatalog extends AbstractCatalog {
     @Override
     public List<CatalogPartitionSpec> listPartitions(ObjectPath tablePath)
             throws TableNotExistException, TableNotPartitionedException, CatalogException {
-        throw new UnsupportedOperationException();
+        checkNotNull(tablePath, "Table path cannot be null");
+
+        CatalogTable table = (CatalogTable) getTable(tablePath);
+        ensurePartitionedTable(tablePath, table);
+        try {
+            TopicStatsTable topicStatsTable = mqAdminExt.examineTopicStats(tablePath.getObjectName());
+            List<String> partitionKeys = table.getPartitionKeys();
+            topicStatsTable.getOffsetTable().forEach(
+                    (messageQueue, offset) -> {
+
+                    });
+
+            return null;
+        } catch (RemotingException e) {
+            throw new RuntimeException(e);
+        } catch (MQClientException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (MQBrokerException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void ensurePartitionedTable(ObjectPath tablePath, CatalogTable table) throws TableNotPartitionedException {
+        if (!table.isPartitioned()) {
+            throw new TableNotPartitionedException(getName(), tablePath);
+        }
     }
 
     @Override
     public List<CatalogPartitionSpec> listPartitions(
             ObjectPath tablePath, CatalogPartitionSpec partitionSpec)
             throws TableNotExistException, TableNotPartitionedException, CatalogException {
+        checkNotNull(tablePath, "Table path cannot be null");
+
+        CatalogTable table = (CatalogTable) getTable(tablePath);
+        ensurePartitionedTable(tablePath, table);
+        try {
+            List<CatalogPartitionSpec> partitionSpecs = Lists.newArrayList();
+            TopicStatsTable topicStatsTable = mqAdminExt.examineTopicStats(tablePath.getObjectName());
+            List<String> partitionKeys = table.getPartitionKeys();
+            topicStatsTable.getOffsetTable().entrySet().stream().map(
+                    entry -> new CatalogPartitionSpec(
+                            new HashMap<String, String>() {
+                                {
+                                    put("third", "2000");
+                                    put("second", "bob");
+                                }
+                            })).forEach(partitionSpecs::add);
+            return partitionSpecs;
+        } catch (RemotingException e) {
+            throw new RuntimeException(e);
+        } catch (MQClientException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (MQBrokerException e) {
+            throw new RuntimeException(e);
+        }
         throw new UnsupportedOperationException();
     }
 
@@ -339,6 +374,7 @@ public class RocketMQCatalog extends AbstractCatalog {
     @Override
     public boolean partitionExists(ObjectPath tablePath, CatalogPartitionSpec partitionSpec)
             throws CatalogException {
+
         throw new UnsupportedOperationException();
     }
 
@@ -349,8 +385,8 @@ public class RocketMQCatalog extends AbstractCatalog {
             CatalogPartition partition,
             boolean ignoreIfExists)
             throws TableNotExistException, TableNotPartitionedException,
-                    PartitionSpecInvalidException, PartitionAlreadyExistsException,
-                    CatalogException {
+            PartitionSpecInvalidException, PartitionAlreadyExistsException,
+            CatalogException {
         throw new UnsupportedOperationException();
     }
 
