@@ -1,7 +1,6 @@
 package org.apache.rocketmq.flink.sink.committer;
 
 import org.apache.flink.core.io.SimpleVersionedSerializer;
-import org.apache.rocketmq.flink.sink.committer.RocketMQCommittable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -9,8 +8,12 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-/** A serializer used to serialize {@link RocketMQCommittable}. */
-public class RocketMQCommittableSerializer implements SimpleVersionedSerializer<RocketMQCommittable> {
+/**
+ * A serializer used to serialize {@link
+ * org.apache.rocketmq.flink.sink.committer.RocketMQCommittable}.
+ */
+public class RocketMQCommittableSerializer
+        implements SimpleVersionedSerializer<RocketMQCommittable> {
 
     private static final int CURRENT_VERSION = 1;
 
@@ -22,7 +25,7 @@ public class RocketMQCommittableSerializer implements SimpleVersionedSerializer<
     @Override
     public byte[] serialize(RocketMQCommittable state) throws IOException {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             final DataOutputStream out = new DataOutputStream(baos)) {
+                final DataOutputStream out = new DataOutputStream(baos)) {
             out.writeShort(state.getEpoch());
             out.writeLong(state.getProducerId());
             out.writeUTF(state.getTransactionalId());
@@ -34,7 +37,7 @@ public class RocketMQCommittableSerializer implements SimpleVersionedSerializer<
     @Override
     public RocketMQCommittable deserialize(int version, byte[] serialized) throws IOException {
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(serialized);
-             final DataInputStream in = new DataInputStream(bais)) {
+                final DataInputStream in = new DataInputStream(bais)) {
             final short epoch = in.readShort();
             final long producerId = in.readLong();
             final String transactionalId = in.readUTF();
