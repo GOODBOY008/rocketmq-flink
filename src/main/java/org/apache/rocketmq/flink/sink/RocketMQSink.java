@@ -11,9 +11,10 @@ import org.apache.rocketmq.flink.sink.writer.RocketWriter;
 import java.io.IOException;
 
 public class RocketMQSink<IN> implements TwoPhaseCommittingSink<IN, RocketMQCommittable> {
+
     @Override
     public PrecommittingSinkWriter<IN, RocketMQCommittable> createWriter(InitContext context) throws IOException {
-        return new RocketWriter<>(deliveryGuarantee);
+        return new RocketWriter<>(context, metricGroup, numRecordsSendErrorsCounter);
     }
 
     @Override

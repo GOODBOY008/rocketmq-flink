@@ -9,11 +9,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+/** A serializer used to serialize {@link RocketMQCommittable}. */
 public class RocketMQCommittableSerializer implements SimpleVersionedSerializer<RocketMQCommittable> {
+
+    private static final int CURRENT_VERSION = 1;
 
     @Override
     public int getVersion() {
-        return 1;
+        return CURRENT_VERSION;
     }
 
     @Override
